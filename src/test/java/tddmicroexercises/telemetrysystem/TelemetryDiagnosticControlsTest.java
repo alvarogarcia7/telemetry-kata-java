@@ -2,9 +2,12 @@ package tddmicroexercises.telemetrysystem;
 
 import org.hamcrest.core.Is;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.OngoingStubbing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
 
 public class TelemetryDiagnosticControlsTest {
 
@@ -39,6 +42,30 @@ public class TelemetryDiagnosticControlsTest {
 				"Remote Rtrn Count........... 00")
 
 		);
+	}
+
+	@Test
+	public void perform_up_to_3_retries() throws Exception {
+		TelemetryClient client = Mockito.mock(TelemetryClient.class);
+		when(client.getOnlineStatus()).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(true);
+		final String telemetryReport = "X";
+		when(client.receive()).thenReturn(telemetryReport);
+		final TelemetryDiagnosticControls telemetryDiagnosticControls = new TelemetryDiagnosticControls(client);
+
+		telemetryDiagnosticControls.checkTransmission();
+
+		assertThat(telemetryDiagnosticControls.getDiagnosticInfo(), Is.is(telemetryReport));
+	}
+
+	@Test(expected = Exception.class)
+	public void after_three_retries_there_is_an_exception() throws Exception {
+		TelemetryClient client = Mockito.mock(TelemetryClient.class);
+		when(client.getOnlineStatus()).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(false).thenReturn(true);
+		when(client.receive()).thenReturn("X");
+		final TelemetryDiagnosticControls telemetryDiagnosticControls = new TelemetryDiagnosticControls(client);
+
+		telemetryDiagnosticControls.checkTransmission();
+
 	}
 
 }
